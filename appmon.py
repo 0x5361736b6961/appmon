@@ -21,6 +21,7 @@ from flask import Flask, request, render_template
 from termcolor import colored
 import database as db
 import platform as platform_module
+from pathlib import Path
 
 print("""
      ___      .______   .______   .___  ___.   ______   .__   __.
@@ -41,6 +42,15 @@ session = ''
 temp_dir = tempfile.mkdtemp()
 merged_script_path = os.path.join(temp_dir,'merged.js')
 APP_LIST = []
+
+home_dir=Path.home()
+appmon_dirname=".appmon"
+dumps_dirname="app_dumps"
+appmon_dir=f"{home_dir}/{appmon_dirname}"
+dumps_dir=f"{appmon_dir}/{dumps_dirname}"
+if not os.path.isdir(dumps_dir):
+    os.makedirs(dumps_dir)
+output_dir = dumps_dir
 
 
 @app.after_request
@@ -63,7 +73,8 @@ def serve_json():
         db_name = request.args.get('reportdb')
     else:
         db_name = request.args.get('app')
-    response = db.read_from_database(db_name, index)
+    readPath = os.path.join(output_dir, str(db_name) + '.db')
+    response = db.read_from_database(readPath, index)
     #response = open('static/data.json').read()
     return response
 
@@ -78,8 +89,7 @@ def monitor_page():
 def landing_page():
     global APP_LIST, DB_MAP
 
-    app_dumps_dir = os.path.join('.','app_dumps')
-    for root, dirs, files in os.walk(app_dumps_dir):
+    for root, dirs, files in os.walk(output_dir):
         path = root.split(os.sep)
         for file in files:
             file_path = os.path.join(root, file)
@@ -95,8 +105,8 @@ def init_opts():
                     help='''Process Name;
                     Accepts "Twitter" for iOS;
                     "com.twitter.android" for Android; "Twitter" for macOS''')
-    parser.add_argument('--spawn', action='store', dest='spawn', default=0,
-                    help='''Optional; Accepts 1=Spawn, 0=Attach; Needs "-p PLATFORM"''')
+    parser.add_argument('--spawn', action='store_true', dest='spawn',
+                    help='''Optional; Spawn instead of attach; Needs "-p PLATFORM"''')
     parser.add_argument('-p', action='store', dest='platform',
                     help='Platform Type; Accepts "ios", "iossim", "android" or "macos"')
     parser.add_argument('-s', action='store', dest='script_path', default='',
@@ -125,13 +135,9 @@ def init_opts():
     platform = results.platform
     script_path = results.script_path
     list_apps = int(results.list_apps)
-    spawn = int(results.spawn)
-
-    output_dir = results.output_dir if results.output_dir else os.path.join('.','app_dumps')
+    spawn = results.spawn
 
     report_name = results.report if results.report else app_name
-
-
 
     if script_path is not None and app_name == '' and list_apps == 0:
         parser.print_help()
@@ -152,6 +158,7 @@ def merge_scripts(path):
                 with codecs.open(script_path, 'r', 'utf-8') as f:
                     source = f.read()
                 script_source += '/* ____%s/%s____ */\n\n' % (os.path.basename(root), file) + source + '\n\n'
+    print(f"Merged script location: {merged_script_path}")
     with codecs.open(merged_script_path, "w", "utf-8") as f:
         f.write(script_source)
     return merged_script_path
@@ -187,9 +194,6 @@ def on_message(message, data):
         current_time = time.strftime('%b %d %Y %I:%M %p', time.localtime())
     else:
         current_time = time.strftime('%b %d %Y %l:%M %p', time.localtime())
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
 
     if message['type'] == 'send':
         writePath = os.path.join(output_dir, str(report_name) + '.db')
@@ -327,7 +331,7 @@ def init_session():
         pid = None
         if app_name:
             try:
-                if platform == 'android' and spawn == 1:
+                if platform == 'android' and spawn:
                     print((colored("Now Spawning %s" % app_name, "green")))
                     pid = device.spawn([app_name])
                     #time.sleep(5)

@@ -18,14 +18,27 @@
 'use strict';
 var mode = "";
 
-var byteArraytoHexString = function(byteArray) {
-  if (byteArray && byteArray.map) {
-    return byteArray.map(function(byte) {
-      return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-    }).join('')
-  } else {
-    return JSON.stringify(byteArray);
+// https://stackoverflow.com/a/55426656
+function myBytesToHex(byteArray) {
+  if(!byteArray){
+    return null;
   }
+  //const chars = new Buffer(byteArray.length * 2);
+  const chars = new Uint8Array(byteArray.length * 2);
+  const alpha = 'a'.charCodeAt(0) - 10;
+  const digit = '0'.charCodeAt(0);
+
+  let p = 0;
+  for (let i = 0; i < byteArray.length; i++) {
+      let nibble = byteArray[i] >>> 4;
+      chars[p++] = nibble > 9 ? nibble + alpha : nibble + digit;
+      nibble = byteArray[i] & 0xF;
+      chars[p++] = nibble > 9 ? nibble + alpha : nibble + digit;    
+  }
+
+  //return chars.toString('utf8');
+  var finString = String.fromCharCode.apply(null, chars);
+  return finString;
 }
 
 var hexToAscii = function(input) {
@@ -38,9 +51,9 @@ var hexToAscii = function(input) {
 
 var normalizeInput = function(input) {
   if (input.array) {
-    var normalized = byteArraytoHexString(input.array());
+    var normalized = myBytesToHex(input.array());
   } else if (input.length && input.length > 0) {
-    var normalized = byteArraytoHexString(input);
+    var normalized = myBytesToHex(input);
   } else {
     var normalized = JSON.stringify(input);
   }
@@ -62,7 +75,7 @@ var getRandomValue = function(arg) {
   type = type[type.length - 1];
   if (type === "SecureRandom") {
     if (arg.getSeed) {
-      return byteArraytoHexString(arg.getSeed(10));
+      return myBytesToHex(arg.getSeed(10));
     }
   }
 }
@@ -71,9 +84,9 @@ var normalizeKey = function(cert_or_key) {
   var type = cert_or_key.toString().split('@')[0].split('.');
   type = type[type.length - 1];
   if (type === "SecretKeySpec") {
-    return byteArraytoHexString(cert_or_key.getEncoded());
+    return myBytesToHex(cert_or_key.getEncoded());
   } else {
-    return "non-SecretKeySpec: " + cert_or_key.toString() + ", encoded: " + byteArraytoHexString(cert_or_key.getEncoded()) + ", object: " + JSON.stringify(cert_or_key);
+    return "non-SecretKeySpec: " + cert_or_key.toString() + ", encoded: " + myBytesToHex(cert_or_key.getEncoded()) + ", object: " + JSON.stringify(cert_or_key);
   }
 
 }
@@ -86,7 +99,7 @@ Java.perform(function() {
 
   if (Cipher.getInstance) {
     Cipher.getInstance.overloads[0].implementation = function(transformation) {
-      //console.log("Cipher.getInstance: " + transformation);
+      // console.log("Cipher.getInstance: " + transformation);
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -105,7 +118,7 @@ Java.perform(function() {
     }
 
     Cipher.getInstance.overloads[0].implementation = function(transformation, provider) {
-      //console.log("Cipher.getInstance: " + transformation);
+      // console.log("Cipher.getInstance: " + transformation);
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -124,7 +137,7 @@ Java.perform(function() {
     }
 
     Cipher.getInstance.overloads[0].implementation = function(transformation, provider) {
-      //console.log("Cipher.getInstance: " + transformation);
+      // console.log("Cipher.getInstance: " + transformation);
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -146,13 +159,13 @@ Java.perform(function() {
   if (Cipher.init) {
     Cipher.init.overloads[0].implementation = function(opmode, cert_or_key, params_or_random) {
       if (opmode) {
-        //console.log("Mode: " + getMode(this, opmode));
+        // console.log("Mode: " + getMode(this, opmode));
       }
       if (cert_or_key) {
-        //console.log("Key: " + normalizeKey(cert_or_key));
+        // console.log("Key: " + normalizeKey(cert_or_key));
       }
       if (params_or_random) {
-        //console.log(getRandomValue(params_or_random));
+        // console.log(getRandomValue(params_or_random));
       }
       /*   --- Payload Header --- */
       var send_data = {};
@@ -189,13 +202,13 @@ Java.perform(function() {
 
     Cipher.init.overloads[1].implementation = function(opmode, cert_or_key, params_or_random) {
       if (opmode) {
-        //console.log("Mode: " + getMode(this, opmode));
+        // console.log("Mode: " + getMode(this, opmode));
       }
       if (cert_or_key) {
-        //console.log("Key: " + normalizeKey(cert_or_key));
+        // console.log("Key: " + normalizeKey(cert_or_key));
       }
       if (params_or_random) {
-        //console.log(getRandomValue(params_or_random));
+        // console.log(getRandomValue(params_or_random));
       }
       /*   --- Payload Header --- */
       var send_data = {};
@@ -233,13 +246,13 @@ Java.perform(function() {
 
     Cipher.init.overloads[2].implementation = function(opmode, cert_or_key, params_or_random) {
       if (opmode) {
-        //console.log("Mode: " + getMode(this, opmode));
+        // console.log("Mode: " + getMode(this, opmode));
       }
       if (cert_or_key) {
-        //console.log("Key: " + normalizeKey(cert_or_key));
+        // console.log("Key: " + normalizeKey(cert_or_key));
       }
       if (params_or_random) {
-        //console.log(getRandomValue(params_or_random));
+        // console.log(getRandomValue(params_or_random));
       }
       /*   --- Payload Header --- */
       var send_data = {};
@@ -276,13 +289,13 @@ Java.perform(function() {
 
     Cipher.init.overloads[3].implementation = function(opmode, cert_or_key, params_or_random) {
       if (opmode) {
-        //console.log("Mode: " + getMode(this, opmode));
+        // console.log("Mode: " + getMode(this, opmode));
       }
       if (cert_or_key) {
-        //console.log("Key: " + normalizeKey(cert_or_key));
+        // console.log("Key: " + normalizeKey(cert_or_key));
       }
       if (params_or_random) {
-        //console.log(getRandomValue(params_or_random));
+        // console.log(getRandomValue(params_or_random));
       }
       /*   --- Payload Header --- */
       var send_data = {};
@@ -319,13 +332,13 @@ Java.perform(function() {
 
     Cipher.init.overloads[4].implementation = function(opmode, cert_or_key, params_or_random) {
       if (opmode) {
-        //console.log("Mode: " + getMode(this, opmode));
+        // console.log("Mode: " + getMode(this, opmode));
       }
       if (cert_or_key) {
-        //console.log("Key: " + normalizeKey(cert_or_key));
+        // console.log("Key: " + normalizeKey(cert_or_key));
       }
       if (params_or_random) {
-        //console.log(getRandomValue(params_or_random));
+        // console.log(getRandomValue(params_or_random));
       }
       /*   --- Payload Header --- */
       var send_data = {};
@@ -362,13 +375,13 @@ Java.perform(function() {
 
     Cipher.init.overloads[5].implementation = function(opmode, cert_or_key, params_or_random) {
       if (opmode) {
-        //console.log("Mode: " + getMode(this, opmode));
+        // console.log("Mode: " + getMode(this, opmode));
       }
       if (cert_or_key) {
-        //console.log("Key: " + normalizeKey(cert_or_key));
+        // console.log("Key: " + normalizeKey(cert_or_key));
       }
       if (params_or_random) {
-        //console.log(getRandomValue(params_or_random));
+        // console.log(getRandomValue(params_or_random));
       }
       /*   --- Payload Header --- */
       var send_data = {};
@@ -405,13 +418,13 @@ Java.perform(function() {
 
     Cipher.init.overloads[6].implementation = function(opmode, cert_or_key, params_or_random) {
       if (opmode) {
-        //console.log("Mode: " + getMode(this, opmode));
+        // console.log("Mode: " + getMode(this, opmode));
       }
       if (cert_or_key) {
-        //console.log("Key: " + normalizeKey(cert_or_key));
+        // console.log("Key: " + normalizeKey(cert_or_key));
       }
       if (params_or_random) {
-        //console.log(getRandomValue(params_or_random));
+        // console.log(getRandomValue(params_or_random));
       }
       /*   --- Payload Header --- */
       var send_data = {};
@@ -448,13 +461,13 @@ Java.perform(function() {
 
     Cipher.init.overloads[7].implementation = function(opmode, cert_or_key, params_or_random) {
       if (opmode) {
-        //console.log("Mode: " + getMode(this, opmode));
+        // console.log("Mode: " + getMode(this, opmode));
       }
       if (cert_or_key) {
-        //console.log("Key: " + normalizeKey(cert_or_key));
+        // console.log("Key: " + normalizeKey(cert_or_key));
       }
       if (params_or_random) {
-        //console.log(getRandomValue(params_or_random));
+        // console.log(getRandomValue(params_or_random));
       }
       /*   --- Payload Header --- */
       var send_data = {};
@@ -494,13 +507,13 @@ Java.perform(function() {
   if (Cipher.doFinal) {
     Cipher.doFinal.overloads[0].implementation = function(input) {
       if (input) {
-        //console.log("Input Data: " + normalizeInput(input));
+        // console.log("Input Data: " + normalizeInput(input));
       }
-      //console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
-      //console.log("Cipher.getIV: " + byteArraytoHexString(this.getIV()));
-      //console.log("Cipher.getBlockSize: " + this.getBlockSize());
+      // console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
+      // console.log("Cipher.getIV: " + myBytesToHex(this.getIV()));
+      // console.log("Cipher.getBlockSize: " + this.getBlockSize());
       var retVal = this.doFinal.overloads[0].apply(this, arguments);
-      //console.log("Cipher.doFinal retVal: " + byteArraytoHexString(retVal));
+      // console.log("Cipher.doFinal retVal: " + myBytesToHex(retVal));
 
       /*   --- Payload Header --- */
       var send_data = {};
@@ -520,7 +533,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Initialization Vector";
-      data.value = byteArraytoHexString(this.getIV());
+      data.value = myBytesToHex(this.getIV());
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -534,7 +547,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Output";
-      data.value = byteArraytoHexString(retVal);
+      data.value = myBytesToHex(retVal);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -544,13 +557,13 @@ Java.perform(function() {
 
     Cipher.doFinal.overloads[1].implementation = function(input) {
       if (input) {
-        //console.log("Input Data: " + normalizeInput(input));
+        // console.log("Input Data: " + normalizeInput(input));
       }
-      //console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
-      //console.log("Cipher.getIV: " + byteArraytoHexString(this.getIV()));
-      //console.log("Cipher.getBlockSize: " + this.getBlockSize());
+      // console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
+      // console.log("Cipher.getIV: " + myBytesToHex(this.getIV()));
+      // console.log("Cipher.getBlockSize: " + this.getBlockSize());
       var retVal = this.doFinal.overloads[1].apply(this, arguments);
-      //console.log("Cipher.doFinal retVal: " + byteArraytoHexString(retVal));
+      // console.log("Cipher.doFinal retVal: " + myBytesToHex(retVal));
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -569,7 +582,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Initialization Vector";
-      data.value = byteArraytoHexString(this.getIV());
+      data.value = myBytesToHex(this.getIV());
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -583,7 +596,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Output";
-      data.value = byteArraytoHexString(retVal);
+      data.value = myBytesToHex(retVal);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -594,13 +607,13 @@ Java.perform(function() {
 
     Cipher.doFinal.overloads[2].implementation = function(input) {
       if (input) {
-        //console.log("Input Data: " + normalizeInput(input));
+        // console.log("Input Data: " + normalizeInput(input));
       }
-      //console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
-      //console.log("Cipher.getIV: " + byteArraytoHexString(this.getIV()));
-      //console.log("Cipher.getBlockSize: " + this.getBlockSize());
+      // console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
+      // console.log("Cipher.getIV: " + myBytesToHex(this.getIV()));
+      // console.log("Cipher.getBlockSize: " + this.getBlockSize());
       var retVal = this.doFinal.overloads[2].apply(this, arguments);
-      //console.log("Cipher.doFinal retVal: " + byteArraytoHexString(retVal));
+      // console.log("Cipher.doFinal retVal: " + myBytesToHex(retVal));
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -619,7 +632,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Initialization Vector";
-      data.value = byteArraytoHexString(this.getIV());
+      data.value = myBytesToHex(this.getIV());
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -633,7 +646,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Output";
-      data.value = byteArraytoHexString(retVal);
+      data.value = myBytesToHex(retVal);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -644,13 +657,13 @@ Java.perform(function() {
 
     Cipher.doFinal.overloads[3].implementation = function(input) {
       if (input) {
-        //console.log("Input Data: " + normalizeInput(input));
+        // console.log("Input Data: " + normalizeInput(input));
       }
-      //console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
-      //console.log("Cipher.getIV: " + byteArraytoHexString(this.getIV()));
-      //console.log("Cipher.getBlockSize: " + this.getBlockSize());
+      // console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
+      // console.log("Cipher.getIV: " + myBytesToHex(this.getIV()));
+      // console.log("Cipher.getBlockSize: " + this.getBlockSize());
       var retVal = this.doFinal.overloads[3].apply(this, arguments);
-      //console.log("Cipher.doFinal retVal: " + byteArraytoHexString(retVal));
+      // console.log("Cipher.doFinal retVal: " + myBytesToHex(retVal));
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -669,7 +682,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Initialization Vector";
-      data.value = byteArraytoHexString(this.getIV());
+      data.value = myBytesToHex(this.getIV());
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -683,7 +696,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Output";
-      data.value = byteArraytoHexString(retVal);
+      data.value = myBytesToHex(retVal);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -694,13 +707,13 @@ Java.perform(function() {
 
     Cipher.doFinal.overloads[4].implementation = function(input) {
       if (input) {
-        //console.log("Input Data: " + normalizeInput(input));
+        // console.log("Input Data: " + normalizeInput(input));
       }
-      //console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
-      //console.log("Cipher.getIV: " + byteArraytoHexString(this.getIV()));
-      //console.log("Cipher.getBlockSize: " + this.getBlockSize());
+      // console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
+      // console.log("Cipher.getIV: " + myBytesToHex(this.getIV()));
+      // console.log("Cipher.getBlockSize: " + this.getBlockSize());
       var retVal = this.doFinal.overloads[4].apply(this, arguments);
-      //console.log("Cipher.doFinal retVal: " + byteArraytoHexString(retVal));
+      // console.log("Cipher.doFinal retVal: " + myBytesToHex(retVal));
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -719,7 +732,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Initialization Vector";
-      data.value = byteArraytoHexString(this.getIV());
+      data.value = myBytesToHex(this.getIV());
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -733,7 +746,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Output";
-      data.value = byteArraytoHexString(retVal);
+      data.value = myBytesToHex(retVal);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -744,13 +757,13 @@ Java.perform(function() {
 
     Cipher.doFinal.overloads[5].implementation = function(input) {
       if (input) {
-        //console.log("Input Data: " + normalizeInput(input));
+        // console.log("Input Data: " + normalizeInput(input));
       }
-      //console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
-      //console.log("Cipher.getIV: " + byteArraytoHexString(this.getIV()));
-      //console.log("Cipher.getBlockSize: " + this.getBlockSize());
+      // console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
+      // console.log("Cipher.getIV: " + myBytesToHex(this.getIV()));
+      // console.log("Cipher.getBlockSize: " + this.getBlockSize());
       var retVal = this.doFinal.overloads[5].apply(this, arguments);
-      //console.log("Cipher.doFinal retVal: " + byteArraytoHexString(retVal));
+      // console.log("Cipher.doFinal retVal: " + myBytesToHex(retVal));
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -769,7 +782,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Initialization Vector";
-      data.value = byteArraytoHexString(this.getIV());
+      data.value = myBytesToHex(this.getIV());
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -783,7 +796,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Output";
-      data.value = byteArraytoHexString(retVal);
+      data.value = myBytesToHex(retVal);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -794,13 +807,13 @@ Java.perform(function() {
 
     Cipher.doFinal.overloads[6].implementation = function(input) {
       if (input) {
-        //console.log("Input Data: " + normalizeInput(input));
+        // console.log("Input Data: " + normalizeInput(input));
       }
-      //console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
-      //console.log("Cipher.getIV: " + byteArraytoHexString(this.getIV()));
-      //console.log("Cipher.getBlockSize: " + this.getBlockSize());
+      // console.log("Cipher.getAlgorithm: " + this.getAlgorithm());
+      // console.log("Cipher.getIV: " + myBytesToHex(this.getIV()));
+      // console.log("Cipher.getBlockSize: " + this.getBlockSize());
       var retVal = this.doFinal.overloads[6].apply(this, arguments);
-      //console.log("Cipher.doFinal retVal: " + byteArraytoHexString(retVal));
+      // console.log("Cipher.doFinal retVal: " + myBytesToHex(retVal));
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -819,7 +832,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Initialization Vector";
-      data.value = byteArraytoHexString(this.getIV());
+      data.value = myBytesToHex(this.getIV());
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -833,7 +846,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       data = {};
       data.name = "Output";
-      data.value = byteArraytoHexString(retVal);
+      data.value = myBytesToHex(retVal);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -845,7 +858,7 @@ Java.perform(function() {
 
   if (SecureRandom.setSeed) {
     SecureRandom.setSeed.overloads[0].implementation = function(seed) {
-      //console.log("SecureRandom.setSeed: " + seed);
+      // console.log("SecureRandom.setSeed: " + seed);
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -866,7 +879,7 @@ Java.perform(function() {
     }
 
     SecureRandom.setSeed.overloads[1].implementation = function(seed) {
-      //console.log("SecureRandom.setSeed: " + seed);
+      // console.log("SecureRandom.setSeed: " + seed);
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();

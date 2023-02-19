@@ -50,7 +50,7 @@ Java.perform(function() {
   };
 
   SharedPreferencesImpl.getInt.implementation = function(key, defValue) {
-    var value = this.getInt.apply(this, arguments);
+    var value = this.getInt.apply(this, key, defValue);
 
     /*   --- Payload Header --- */
     var send_data = {};
@@ -274,7 +274,7 @@ Java.perform(function() {
     /*   --- Payload Body --- */
     var data = {};
     data.name = "Value";
-    data.value = value ? value.toString() : 'null';
+    data.value = values ? JSON.stringify(values) : 'null';
     data.argSeq = 0;
     send_data.artifact.push(data);
 

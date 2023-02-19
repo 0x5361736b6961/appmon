@@ -1621,7 +1621,7 @@ Java.perform(function() {
 
   // Ref: https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#deleteDatabase(java.io.File)
   if (SQLiteDatabase.deleteDatabase) {
-    SQLiteDatabase.deleteDatabase.implementation = function(file) {
+    SQLiteDatabase.deleteDatabase.overload('java.io.File').implementation = function(file) {
       if (file) {
         //console.log("SQLiteDatabase.deleteDatabase File: " + file.toString());
         /*   --- Payload Header --- */
@@ -1642,6 +1642,32 @@ Java.perform(function() {
         send(JSON.stringify(send_data));
       }
       return this.deleteDatabase.apply(this, file);
+    }
+    try{
+      SQLiteDatabase.deleteDatabase.overload('java.io.File', 'boolean').implementation = function(file, idk_some_boolean) {
+        if (file) {
+          //console.log("SQLiteDatabase.deleteDatabase File: " + file.toString());
+          /*   --- Payload Header --- */
+          var send_data = {};
+          send_data.time = new Date();
+          send_data.txnType = 'SQLiteDatabase';
+          send_data.lib = 'android.database.sqlite.SQLiteDatabase';
+          send_data.method = 'deleteDatabase';
+          send_data.artifact = [];
+  
+          /*   --- Payload Body --- */
+          var data = {};
+          data.name = "DB Path";
+          data.value = file ? file.toString() : 'null';
+          data.argSeq = 0;
+          send_data.artifact.push(data);
+  
+          send(JSON.stringify(send_data));
+        }
+        return this.deleteDatabase.apply(this, file, idk_some_boolean);
+      }
+    }catch(error){
+      //ignore
     }
   }
 });

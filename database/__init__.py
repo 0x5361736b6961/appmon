@@ -22,7 +22,8 @@ from xml.sax.saxutils import escape
 def save_to_database(db_path, str_json):
   try:
     str_json = json.loads(str_json.replace("\n", "<br />").replace("\r", "<br />"), strict=False)
-    db = dataset.connect('sqlite:///%s' % (db_path.replace("'", "_")))
+    con_string = 'sqlite:///%s' % (db_path.replace("'", "_"))
+    db = dataset.connect(con_string)
     table = db['api_captures']
     os_string = platform_module.system()
     if os_string == "Windows":
@@ -53,7 +54,7 @@ def stringify(data):
 def read_from_database(db_path, index=0):
   result_set = {}
   parent_holder = []
-  db = dataset.connect('sqlite:///./app_dumps/%s.db' % (db_path))
+  db = dataset.connect('sqlite:///%s' % (db_path.replace("'", "_")))
   api_captures = db.query('SELECT * FROM api_captures GROUP BY artifact')
   for capture in api_captures:
     child_holder = []

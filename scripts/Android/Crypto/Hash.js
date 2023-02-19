@@ -16,15 +16,26 @@
 
 'use strict';
 
-var byteArraytoHexString = function(byteArray) {
-  if (!byteArray) { return 'null'; }
-  if (byteArray.map) {
-    return byteArray.map(function(byte) {
-      return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-    }).join('');
-  } else {
-    return byteArray + "";
+// https://stackoverflow.com/a/55426656
+function myBytesToHex(byteArray) {
+  if(!byteArray){
+    return null;
   }
+  //const chars = new Buffer(byteArray.length * 2);
+  const chars = new Uint8Array(byteArray.length * 2);
+  const alpha = 'a'.charCodeAt(0) - 10;
+  const digit = '0'.charCodeAt(0);
+
+  let p = 0;
+  for (let i = 0; i < byteArray.length; i++) {
+      let nibble = byteArray[i] >>> 4;
+      chars[p++] = nibble > 9 ? nibble + alpha : nibble + digit;
+      nibble = byteArray[i] & 0xF;
+      chars[p++] = nibble > 9 ? nibble + alpha : nibble + digit;    
+  }
+
+  //return chars.toString('utf8');
+  return String.fromCharCode.apply(null, chars);
 }
 
 var hexToAscii = function(input) {
@@ -37,9 +48,11 @@ var hexToAscii = function(input) {
 
 var updateInput = function(input) {
   if (input.length && input.length > 0) {
-    var normalized = byteArraytoHexString(input);
+    var normalized = myBytesToHex(input);
   } else if (input.array) {
-    var normalized = byteArraytoHexString(input.array());
+    var normalized = myBytesToHex(input.array());
+  } else if (Array.isArray(input)) {
+    var normalized = myBytesToHex(input);
   } else {
     var normalized = input.toString();
   }
@@ -54,7 +67,7 @@ Java.perform(function() {
       var digest = this.digest.overloads[0].apply(this, arguments);
       var algorithm = this.getAlgorithm().toString();
       //console.log("MessageDigest.getAlgorithm: " + algorithm);
-      //console.log("MessageDigest.digest: " + byteArraytoHexString(digest));
+      //console.log("MessageDigest.digest: " + myBytesToHex(digest));
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -73,7 +86,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       var data = {};
       data.name = "Digest";
-      data.value = byteArraytoHexString(digest);
+      data.value = myBytesToHex(digest);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
@@ -85,7 +98,7 @@ Java.perform(function() {
       var digest = this.digest.overloads[1].apply(this, arguments);
       var algorithm = this.getAlgorithm().toString();
       //console.log("MessageDigest.getAlgorithm: " + algorithm);
-      //console.log("MessageDigest.digest: " + byteArraytoHexString(digest));
+      //console.log("MessageDigest.digest: " + myBytesToHex(digest));
       /*   --- Payload Header --- */
       var send_data = {};
       send_data.time = new Date();
@@ -104,7 +117,7 @@ Java.perform(function() {
       /*   --- Payload Body --- */
       var data = {};
       data.name = "Digest";
-      data.value = byteArraytoHexString(digest);
+      data.value = myBytesToHex(digest);
       data.argSeq = 0;
       send_data.artifact.push(data);
 
